@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define HEIGHT 30
 #define WIDTH 100
@@ -20,10 +21,43 @@
 int make_screen_array(char *screen_buffer);
 int draw_symbol(int ball_x, int ball_y, char *screen_buffer, char symbol);
 double ask_for_data(char *question);
-int draw_graph(double a, double b, double c);
+int draw_graph(double a, double b, double c, char type);
 int draw_min_max(int *bounds, char *screen_buffer);
+int enter_function(char function);
 
 int main() {
+    char menu[] = "Graph plotter menu:\n1.Enter Function\n2.Add function\n3.Show Graph\n4.Quit\n";
+    char sub_menu[] = "1.Linear or Quadratic\n2.Sin\n3.Cos\n4.Tan\n";
+    char option;
+    printf("%s", menu);
+    while (1) {
+        scanf(" %c", &option);
+        while (getchar() != '\n');
+
+        switch (option) {
+            case '1':
+                CLEAR_SCREEN();
+                printf("%s", sub_menu);
+                char function;
+                scanf(" %c", &function);
+                while (getchar() != '\n');
+                enter_function(function);
+                break;
+            case '2':
+                break;
+            case '4':
+                return 0;
+            default:
+                CLEAR_SCREEN();
+                printf("%c is undefined\n", option);
+                printf("%s", menu);
+                break;
+        }
+    }
+    return 0;
+}
+
+int enter_function(char function) {
     printf("note: set a = 0 for linear functions\n");
     double a = ask_for_data("a");
     double b = ask_for_data("b");
@@ -31,12 +65,12 @@ int main() {
 
     // terminal setup
     printf("\x1b[8;%d;%dt", HEIGHT + 1, WIDTH + 2); // terminal size
-    printf("\x1b[?251");
+    printf("\x1b[?25l");
     CLEAR_SCREEN();
 
     char *screen_buffer = malloc((WIDTH + 1) * HEIGHT + 1);
     make_screen_array(screen_buffer);
-    draw_graph(a, b, c);
+    draw_graph(a, b, c, function);
 
     SLEEP(5);
     CLEAR_SCREEN();
@@ -93,25 +127,33 @@ double ask_for_data(char *question) {
     }
 }
 
-int *calc_y_bounds(double a, double b, double c) {
+int *calc_y_bounds(double a, double b, double c, char type) {
     int *arr = malloc(2 * sizeof(int));
-
+    
     arr[0] = INT_MAX;
     arr[1] = INT_MIN;
-
+    
     for (int i = 0; i < WIDTH; i++) {
-        int y = (int)(a * i * i + b * i + c);
+        double y_val;
+        double x_map = (i - WIDTH / 2.0) * 0.2;
+
+        if (type == '2') y_val = a * sin(b * x_map) + c;
+        else if (type == '3') y_val = a * cos(b * x_map) + c;
+        else if (type == '4') y_val = a * tan(b * x_map) + c;
+        else y_val = a * i * i + b * i + c;
+
+        int y = (int)y_val;
         if (y > arr[1]) arr[1] = y;
         if (y < arr[0]) arr[0] = y;
     }
     return arr;
 }
 
-int draw_graph(double a, double b, double c) {
+int draw_graph(double a, double b, double c, char type) {
     char *screen_buffer = malloc((WIDTH + 1) * HEIGHT + 1);
 
     make_screen_array(screen_buffer);
-    int *bounds = calc_y_bounds(a, b, c);
+    int *bounds = calc_y_bounds(a, b, c, type);
 
     int x_axis_location;
     if (bounds[0] == bounds[1]) {
@@ -128,7 +170,14 @@ int draw_graph(double a, double b, double c) {
     }
 
     for (int i = 0; i < WIDTH; i++) {
-        double y = a * i * i + b * i + c;
+        double x_map = (i - WIDTH / 2.0) * 0.2;
+        double y;
+
+        if (type == '2') y = a * sin(b * x_map) + c;
+        else if (type == '3') y = a * cos(b * x_map) + c;
+        else if (type == '4') y = a * tan(b * x_map) + c;
+        else y = a * i * i + b * i + c;
+
         int normal_y;
 
         if (bounds[0] == bounds[1]) {
