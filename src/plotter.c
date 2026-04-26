@@ -20,12 +20,14 @@
 int make_screen_array(char *screen_buffer);
 int draw_symbol(int ball_x, int ball_y, char *screen_buffer, char symbol);
 double ask_for_data(char *question);
-int draw_graph(double slope, double y_intercept);
+int draw_graph(double a, double b, double c);
 int draw_min_max(int *bounds, char *screen_buffer);
 
 int main() {
-    double slope = ask_for_data("slope");
-    double y_intercept = ask_for_data("y_intercept");
+    printf("note: set a = 0 for linear functions\n");
+    double a = ask_for_data("a");
+    double b = ask_for_data("b");
+    double c = ask_for_data("c");
 
     // terminal setup
     printf("\x1b[8;%d;%dt", HEIGHT + 1, WIDTH + 2); // terminal size
@@ -34,7 +36,7 @@ int main() {
 
     char *screen_buffer = malloc((WIDTH + 1) * HEIGHT + 1);
     make_screen_array(screen_buffer);
-    draw_graph(slope, y_intercept);
+    draw_graph(a, b, c);
 
     SLEEP(5);
     CLEAR_SCREEN();
@@ -91,29 +93,29 @@ double ask_for_data(char *question) {
     }
 }
 
-int *calc_y_bounds(double slope, double y_intercept) {
+int *calc_y_bounds(double a, double b, double c) {
     int *arr = malloc(2 * sizeof(int));
 
     arr[0] = INT_MAX;
     arr[1] = INT_MIN;
 
     for (int i = 0; i < WIDTH; i++) {
-        int y = (int)(slope * i + y_intercept);
+        int y = (int)(a * i * i + b * i + c);
         if (y > arr[1]) arr[1] = y;
         if (y < arr[0]) arr[0] = y;
     }
     return arr;
 }
 
-int draw_graph(double slope, double y_intercept) {
+int draw_graph(double a, double b, double c) {
     char *screen_buffer = malloc((WIDTH + 1) * HEIGHT + 1);
 
     make_screen_array(screen_buffer);
-    int *bounds = calc_y_bounds(slope, y_intercept);
+    int *bounds = calc_y_bounds(a, b, c);
 
     int x_axis_location;
     if (bounds[0] == bounds[1]) {
-        x_axis_location = (HEIGHT / 2) - y_intercept;
+        x_axis_location = (HEIGHT / 2) - b;
     } else {
         double x_axis_ratio = (0.0 - bounds[0]) / (bounds[1] - bounds[0]);
         x_axis_location = (int)((HEIGHT - 1) * x_axis_ratio);
@@ -126,8 +128,9 @@ int draw_graph(double slope, double y_intercept) {
     }
 
     for (int i = 0; i < WIDTH; i++) {
-        double y = slope * i + y_intercept;
+        double y = a * i * i + b * i + c;
         int normal_y;
+
         if (bounds[0] == bounds[1]) {
             normal_y = HEIGHT / 2;
         } else {
