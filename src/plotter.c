@@ -21,7 +21,7 @@
 int make_screen_array(char *screen_buffer);
 int draw_symbol(int ball_x, int ball_y, char *screen_buffer, char symbol);
 double ask_for_data(char *question);
-int draw_graph(double a, double b, double c, char type);
+int draw_graph(double a, double b, double c, char type, double zoom, double offset_x);
 int draw_min_max(int *bounds, char *screen_buffer);
 int enter_function(char function);
 
@@ -47,6 +47,8 @@ int main() {
                 break;
             case '4':
                 return 0;
+            case 'q':
+                return 0;
             default:
                 CLEAR_SCREEN();
                 printf("%c is undefined\n", option);
@@ -62,17 +64,32 @@ int enter_function(char function) {
     double a = ask_for_data("a");
     double b = ask_for_data("b");
     double c = ask_for_data("c");
-
+    double zoom = 0.2;
+    double offset_x = 0;
+    
     // terminal setup
     printf("\x1b[8;%d;%dt", HEIGHT + 1, WIDTH + 2); // terminal size
     printf("\x1b[?25l");
     CLEAR_SCREEN();
-
+    
     char *screen_buffer = malloc((WIDTH + 1) * HEIGHT + 1);
     make_screen_array(screen_buffer);
-    draw_graph(a, b, c, function);
+    while (1) {
+        CLEAR_SCREEN();
+        draw_graph(a, b, c, function, zoom, offset_x);
+        printf("\ncontrols: A/D pan, +/- zoom, q quit");
+        
+        char key;
+        scanf(" %c", &key);
+        if (key == 'q') break;
+        if (key == 'a') offset_x -= zoom * 10;
+        if (key == 'd') offset_x += zoom * 10;
+        if (key == '+') zoom *= 0.8;
+        if (key == '-') zoom *= 1.2;
 
-    SLEEP(5);
+    }
+
+
     CLEAR_SCREEN();
 
     return 0;
@@ -127,7 +144,7 @@ double ask_for_data(char *question) {
     }
 }
 
-int *calc_y_bounds(double a, double b, double c, char type) {
+int *calc_y_bounds(double a, double b, double c, char type, double zoom, double offset_x) {
     int *arr = malloc(2 * sizeof(int));
     
     arr[0] = INT_MAX;
@@ -135,12 +152,12 @@ int *calc_y_bounds(double a, double b, double c, char type) {
     
     for (int i = 0; i < WIDTH; i++) {
         double y_val;
-        double x_map = (i - WIDTH / 2.0) * 0.2;
+        double x_map = (i - WIDTH / 2.0) * zoom + offset_x;
 
         if (type == '2') y_val = a * sin(b * x_map) + c;
         else if (type == '3') y_val = a * cos(b * x_map) + c;
         else if (type == '4') y_val = a * tan(b * x_map) + c;
-        else y_val = a * i * i + b * i + c;
+        else y_val = a * x_map * x_map + b * x_map + c;
 
         int y = (int)y_val;
         if (y > arr[1]) arr[1] = y;
@@ -149,11 +166,11 @@ int *calc_y_bounds(double a, double b, double c, char type) {
     return arr;
 }
 
-int draw_graph(double a, double b, double c, char type) {
+int draw_graph(double a, double b, double c, char type, double zoom, double offset_x) {
     char *screen_buffer = malloc((WIDTH + 1) * HEIGHT + 1);
 
     make_screen_array(screen_buffer);
-    int *bounds = calc_y_bounds(a, b, c, type);
+    int *bounds = calc_y_bounds(a, b, c, type, zoom, offset_x);
 
     int x_axis_location;
     if (bounds[0] == bounds[1]) {
@@ -170,13 +187,13 @@ int draw_graph(double a, double b, double c, char type) {
     }
 
     for (int i = 0; i < WIDTH; i++) {
-        double x_map = (i - WIDTH / 2.0) * 0.2;
+        double x_map = (i - WIDTH / 2.0) * zoom + offset_x;
         double y;
 
         if (type == '2') y = a * sin(b * x_map) + c;
         else if (type == '3') y = a * cos(b * x_map) + c;
         else if (type == '4') y = a * tan(b * x_map) + c;
-        else y = a * i * i + b * i + c;
+        else y = a * x_map * x_map + b * x_map + c;
 
         int normal_y;
 
